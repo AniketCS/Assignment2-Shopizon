@@ -1,0 +1,13 @@
+.banner {
+  background: linear-gradient(to right, #06b6d4, #3b82f6);
+  color: white;
+  text-align: center;
+  padding: 3rem 1rem;
+}
+
+.button {
+  margin-top: 1rem;
+  background-color: white;
+  color: #2563eb;
+  font-weight: bold;
+}
