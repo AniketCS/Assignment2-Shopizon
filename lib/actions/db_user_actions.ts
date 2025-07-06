@@ -23,6 +23,7 @@ import { UserRole } from "@prisma/client";
   export async function createUser(
     name: string,
     email: string,
+    password: string,
     role?: UserRole,
     address?: string,
     phone?: string,
@@ -33,6 +34,7 @@ import { UserRole } from "@prisma/client";
         data: {
           name,
           email,
+          password,
           role: role || UserRole.CUSTOMER,
           address,
           phone,

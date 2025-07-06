@@ -35,7 +35,7 @@ async function _deleteCartItem(
   return NextResponse.json({ items }, { status: 200 });
 }
 
-export const DELETE = withAuth(_deleteCartItem) as (
-  req: NextRequest,
-  context: { params: { productId: string } }
-) => Promise<NextResponse>;
+// export const DELETE = withAuth(_deleteCartItem) as (
+//   req: NextRequest,
+//   context: { params: Promise<{ productId: string }> }
+// ) => Promise<NextResponse>;

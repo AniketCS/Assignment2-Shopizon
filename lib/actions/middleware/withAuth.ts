@@ -4,19 +4,19 @@ import jwt from "jsonwebtoken";
 const JWT_SECRET = process.env.JWT_SECRET!;
 
 export function withAuth<
-  P extends { params: Record<string,string> }
+  P extends { params: Promise<Record<string, string>> }
 >(
   handler: (
     req: NextRequest,
     session: { userId: string; role: string },
-    params: P["params"]
+    params: Record<string, string>
   ) => Promise<NextResponse>
 ) {
   if (process.env.NODE_ENV === "development") {
-    // always act as Emily Chen
     const devSession = { userId: "686968c9e6ef528cc7e7aff3", role: "CUSTOMER" };
     return async (req: NextRequest, ctx: P) => {
-      return handler(req, devSession, ctx.params);
+      const params = await ctx.params;
+      return handler(req, devSession, params);
     };
   }
 
@@ -31,7 +31,8 @@ export function withAuth<
         userId: string;
         role: string;
       };
-      return handler(req, session, ctx.params);
+      const params = await ctx.params;
+      return handler(req, session, params);
     } catch {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
