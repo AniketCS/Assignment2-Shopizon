@@ -1,38 +1,51 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FaShoppingCart, FaTrash, FaCreditCard } from 'react-icons/fa';
 import MiniHero from '@/lib/ui/dashboard/MiniHero';
 import Header from '@/lib/ui/header/Header';
 import Footer from '@/lib/ui/footer/Footer';
 import Link from 'next/link';
 
-export default function CartPage() {
-  const [cartItems, setCartItems] = useState([
-    {
-      id: '1',
-      name: 'Premium Wireless Headphones',
-      price: 199.99,
-      quantity: 1,
-      inStock: true
-    },
-    {
-      id: '2',
-      name: 'Smart Watch Pro',
-      price: 249.99,
-      quantity: 2,
-      inStock: true
-    },
-    {
-      id: '3',
-      name: 'Wireless Charging Pad',
-      price: 39.99,
-      quantity: 1,
-      inStock: true
-    }
-  ]);
+type CartItem = {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  inStock: boolean;
+};
 
-  const handleQuantityChange = (id: string, delta: number) => {
+export default function CartPage() {
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch cart items from API
+  useEffect(() => {
+    async function fetchCart() {
+      setLoading(true);
+      try {
+        const res = await fetch('/api/cart');
+        if (!res.ok) throw new Error('Failed to fetch cart');
+        const data = await res.json();
+        
+        setCartItems(
+          (data.items || []).map((item: any) => ({
+            id: item.product.id,
+            name: item.product.name,
+            price: item.product.price,
+            quantity: item.quantity,
+            inStock: true, 
+          }))
+        );
+      } catch (e) {
+        setCartItems([]);
+      }
+      setLoading(false);
+    }
+    fetchCart();
+  }, []);
+
+  const handleQuantityChange = async (id: string, delta: number) => {
     setCartItems(prev =>
       prev.map(item =>
         item.id === id
@@ -40,14 +53,16 @@ export default function CartPage() {
           : item
       )
     );
+   
   };
 
-  const handleRemoveItem = (id: string) => {
+  const handleRemoveItem = async (id: string) => {
     setCartItems(prev => prev.filter(item => item.id !== id));
+    await fetch(`/api/cart/${id}`, { method: 'DELETE' });
   };
 
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const shipping = 9.99;
+  const shipping = cartItems.length > 0 ? 9.99 : 0;
   const tax = subtotal * 0.08;
   const total = subtotal + shipping + tax;
 
@@ -72,59 +87,63 @@ export default function CartPage() {
             </div>
 
             <div className="space-y-4">
-              {cartItems.map(item => (
-                <div
-                  key={item.id}
-                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-white rounded-lg shadow-sm p-4 border border-gray-200"
-                >
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-lg">{item.name}</h3>
-                    {!item.inStock && (
-                      <span className="badge badge-warning mt-1">Out of Stock</span>
-                    )}
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-4 mt-4 sm:mt-0">
-                    <div className="text-sm text-gray-600">
-                      <div>Price: <span className="font-semibold">${item.price.toFixed(2)}</span></div>
-                      <div>
-                        Total:{' '}
-                        <span className="font-semibold">
-                          ${(item.price * item.quantity).toFixed(2)}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center border rounded overflow-hidden">
-                      <button
-                        className="btn btn-sm min-w-[2rem] px-3 bg-transparent border-none text-black"
-                        onClick={() => handleQuantityChange(item.id, -1)}
-                      >
-                        -
-                      </button>
-                      <div className="px-3 text-sm">{item.quantity}</div>
-                      <button
-                        className="btn btn-sm min-w-[2rem] px-3 bg-transparent border-none text-black"
-                        onClick={() => handleQuantityChange(item.id, 1)}
-                      >
-                        +
-                      </button>
-                    </div>
-
-                    <button
-                      className="text-red-500 bg-transparent border-none"
-                      onClick={() => handleRemoveItem(item.id)}
-                    >
-                      <FaTrash size={16} />
-                    </button>
-                  </div>
+              {loading ? (
+                <div className="p-6 text-center text-gray-500 bg-white border rounded">
+                  Loading your cart...
                 </div>
-              ))}
-
-              {cartItems.length === 0 && (
+              ) : cartItems.length === 0 ? (
                 <div className="p-6 text-center text-gray-500 bg-white border rounded">
                   Your cart is empty.
                 </div>
+              ) : (
+                cartItems.map(item => (
+                  <div
+                    key={item.id}
+                    className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-white rounded-lg shadow-sm p-4 border border-gray-200"
+                  >
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-lg">{item.name}</h3>
+                      {!item.inStock && (
+                        <span className="badge badge-warning mt-1">Out of Stock</span>
+                      )}
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 mt-4 sm:mt-0">
+                      <div className="text-sm text-gray-600">
+                        <div>Price: <span className="font-semibold">${item.price.toFixed(2)}</span></div>
+                        <div>
+                          Total:{' '}
+                          <span className="font-semibold">
+                            ${(item.price * item.quantity).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center border rounded overflow-hidden">
+                        <button
+                          className="btn btn-sm min-w-[2rem] px-3 bg-transparent border-none text-black"
+                          onClick={() => handleQuantityChange(item.id, -1)}
+                        >
+                          -
+                        </button>
+                        <div className="px-3 text-sm">{item.quantity}</div>
+                        <button
+                          className="btn btn-sm min-w-[2rem] px-3 bg-transparent border-none text-black"
+                          onClick={() => handleQuantityChange(item.id, 1)}
+                        >
+                          +
+                        </button>
+                      </div>
+
+                      <button
+                        className="text-red-500 bg-transparent border-none"
+                        onClick={() => handleRemoveItem(item.id)}
+                      >
+                        <FaTrash size={16} />
+                      </button>
+                    </div>
+                  </div>
+                ))
               )}
             </div>
           </div>
